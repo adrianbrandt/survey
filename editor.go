@@ -88,13 +88,10 @@ func (e *Editor) Prompt(config *PromptConfig) (interface{}, error) {
 
 func (e *Editor) prompt(initialValue string, config *PromptConfig) (interface{}, error) {
 	// render the template
-	err := e.Render(
-		EditorQuestionTemplate,
-		EditorTemplateData{
-			Editor: *e,
-			Config: config,
-		},
-	)
+	err := e.Render(EditorQuestionTemplate, EditorTemplateData{
+		Editor: *e,
+		Config: config,
+	}, "")
 	if err != nil {
 		return "", err
 	}
@@ -125,14 +122,11 @@ func (e *Editor) prompt(initialValue string, config *PromptConfig) (interface{},
 			break
 		}
 		if string(r) == config.HelpInput && e.Help != "" {
-			err = e.Render(
-				EditorQuestionTemplate,
-				EditorTemplateData{
-					Editor:   *e,
-					ShowHelp: true,
-					Config:   config,
-				},
-			)
+			err = e.Render(EditorQuestionTemplate, EditorTemplateData{
+				Editor:   *e,
+				ShowHelp: true,
+				Config:   config,
+			}, "")
 			if err != nil {
 				return "", err
 			}
@@ -214,13 +208,10 @@ func (e *Editor) prompt(initialValue string, config *PromptConfig) (interface{},
 }
 
 func (e *Editor) Cleanup(config *PromptConfig, val interface{}) error {
-	return e.Render(
-		EditorQuestionTemplate,
-		EditorTemplateData{
-			Editor:     *e,
-			Answer:     "<Received>",
-			ShowAnswer: true,
-			Config:     config,
-		},
-	)
+	return e.Render(EditorQuestionTemplate, EditorTemplateData{
+		Editor:     *e,
+		Answer:     "<Received>",
+		ShowAnswer: true,
+		Config:     config,
+	}, "")
 }

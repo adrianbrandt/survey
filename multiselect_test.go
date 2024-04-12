@@ -257,10 +257,7 @@ func TestMultiSelectRender(t *testing.T) {
 			// set the icon set
 			test.data.Config = defaultPromptConfig()
 
-			err = test.prompt.Render(
-				MultiSelectQuestionTemplate,
-				test.data,
-			)
+			err = test.prompt.Render(MultiSelectQuestionTemplate, test.data, "")
 			assert.NoError(t, err)
 
 			assert.NoError(t, w.Close())

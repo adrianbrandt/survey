@@ -68,10 +68,7 @@ func TestConfirmRender(t *testing.T) {
 			// set the runtime config
 			test.data.Config = defaultPromptConfig()
 
-			err = test.prompt.Render(
-				ConfirmQuestionTemplate,
-				test.data,
-			)
+			err = test.prompt.Render(ConfirmQuestionTemplate, test.data, "")
 			assert.NoError(t, err)
 
 			assert.NoError(t, w.Close())

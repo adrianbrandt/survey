@@ -37,13 +37,10 @@ var MultilineQuestionTemplate = `
 
 func (i *Multiline) Prompt(config *PromptConfig) (interface{}, error) {
 	// render the template
-	err := i.Render(
-		MultilineQuestionTemplate,
-		MultilineTemplateData{
-			Multiline: *i,
-			Config:    config,
-		},
-	)
+	err := i.Render(MultilineQuestionTemplate, MultilineTemplateData{
+		Multiline: *i,
+		Config:    config,
+	}, "")
 	if err != nil {
 		return "", err
 	}
@@ -100,13 +97,10 @@ func (i *Multiline) Prompt(config *PromptConfig) (interface{}, error) {
 }
 
 func (i *Multiline) Cleanup(config *PromptConfig, val interface{}) error {
-	return i.Render(
-		MultilineQuestionTemplate,
-		MultilineTemplateData{
-			Multiline:  *i,
-			Answer:     val.(string),
-			ShowAnswer: true,
-			Config:     config,
-		},
-	)
+	return i.Render(MultilineQuestionTemplate, MultilineTemplateData{
+		Multiline:  *i,
+		Answer:     val.(string),
+		ShowAnswer: true,
+		Config:     config,
+	}, "")
 }

@@ -115,10 +115,7 @@ func TestInputRender(t *testing.T) {
 			// set the runtime config
 			test.data.Config = defaultPromptConfig()
 
-			err = test.prompt.Render(
-				InputQuestionTemplate,
-				test.data,
-			)
+			err = test.prompt.Render(InputQuestionTemplate, test.data, "")
 			assert.NoError(t, err)
 
 			assert.NoError(t, w.Close())

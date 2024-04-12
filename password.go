@@ -37,13 +37,10 @@ var PasswordQuestionTemplate = `
 
 func (p *Password) Prompt(config *PromptConfig) (interface{}, error) {
 	// render the question template
-	userOut, _, err := core.RunTemplate(
-		PasswordQuestionTemplate,
-		PasswordTemplateData{
-			Password: *p,
-			Config:   config,
-		},
-	)
+	userOut, _, err := core.RunTemplate(PasswordQuestionTemplate, PasswordTemplateData{
+		Password: *p,
+		Config:   config,
+	})
 	if err != nil {
 		return "", err
 	}
@@ -78,14 +75,11 @@ func (p *Password) Prompt(config *PromptConfig) (interface{}, error) {
 			// terminal will echo the \n so we need to jump back up one row
 			cursor.PreviousLine(1)
 
-			err = p.Render(
-				PasswordQuestionTemplate,
-				PasswordTemplateData{
-					Password: *p,
-					ShowHelp: true,
-					Config:   config,
-				},
-			)
+			err = p.Render(PasswordQuestionTemplate, PasswordTemplateData{
+				Password: *p,
+				ShowHelp: true,
+				Config:   config,
+			}, "")
 			if err != nil {
 				return "", err
 			}
@@ -97,7 +91,7 @@ func (p *Password) Prompt(config *PromptConfig) (interface{}, error) {
 
 	lineStr := string(line)
 	p.AppendRenderedText(strings.Repeat(string(config.HideCharacter), len(lineStr)))
-	return lineStr, err
+	return lineStr, nil
 }
 
 // Cleanup hides the string with a fixed number of characters.

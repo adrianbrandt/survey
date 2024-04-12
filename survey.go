@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"text/template"
 	"unicode/utf8"
 
 	"github.com/adrianbrandt/survey/v2/core"
@@ -110,6 +111,7 @@ type Question struct {
 	Prompt    Prompt
 	Validate  Validator
 	Transform Transformer
+	Templates *PromptTemplates
 }
 
 // PromptConfig holds the global configuration for a prompt
@@ -124,6 +126,42 @@ type PromptConfig struct {
 	RemoveSelectAll  bool
 	RemoveSelectNone bool
 	HideCharacter    rune
+}
+
+type PromptTemplates struct {
+	// Prompt is a text/template for the prompt label displayed on the left side of the prompt.
+	Prompt string
+
+	// Prompt is a text/template for the prompt label when IsConfirm is set as true.
+	Confirm string
+
+	// Valid is a text/template for the prompt label when the value entered is valid.
+	Valid string
+
+	// Invalid is a text/template for the prompt label when the value entered is invalid.
+	Invalid string
+
+	// Success is a text/template for the prompt label when the user has pressed entered and the value has been
+	// deemed valid by the validation function. The label will keep using this template even when the prompt ends
+	// inside the console.
+	Success string
+
+	// Prompt is a text/template for the prompt label when the value is invalid due to an error triggered by
+	// the prompt's validation function.
+	ValidationError string
+
+	// FuncMap is a map of helper functions that can be used inside of templates according to the text/template
+	// documentation.
+	//
+	// By default, FuncMap contains the color functions used to color the text in templates. If FuncMap
+	// is overridden, the colors functions must be added in the override from promptui.FuncMap to work.
+	FuncMap template.FuncMap
+
+	prompt     *template.Template
+	valid      *template.Template
+	invalid    *template.Template
+	validation *template.Template
+	success    *template.Template
 }
 
 // Prompt is the primary interface for the objects that can take user input
@@ -312,13 +350,14 @@ matching name. For example:
 	err := survey.Ask(qs, &answers)
 */
 func Ask(qs []*Question, response interface{}, opts ...AskOpt) error {
+	var err error
 	// build up the configuration options
 	options := defaultAskOptions()
 	for _, opt := range opts {
 		if opt == nil {
 			continue
 		}
-		if err := opt(options); err != nil {
+		if err = opt(options); err != nil {
 			return err
 		}
 	}
@@ -459,7 +498,7 @@ func computeCursorOffset(tmpl string, data IterableOpts, opts []core.OptionAnswe
 		if i < idx {
 			continue
 		}
-		renderedOpt := renderOpt(i, o)
+		renderedOpt := renderOpt(i-1, o)
 		valWidth := utf8.RuneCount([]byte(renderedOpt))
 		if valWidth > tWidth {
 			splitCount := valWidth / tWidth

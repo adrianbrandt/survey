@@ -77,7 +77,7 @@ func (r *Renderer) OffsetCursor(offset int) {
 	}
 }
 
-func (r *Renderer) Render(tmpl string, data interface{}) error {
+func (r *Renderer) Render(tmpl string, data interface{}, details string) error {
 	// cleanup the currently rendered text
 	lineCount := r.countLines(r.renderedText)
 	r.resetPrompt(lineCount)
@@ -94,6 +94,13 @@ func (r *Renderer) Render(tmpl string, data interface{}) error {
 		return err
 	}
 
+	if len(details) > 0 {
+		if _, err := fmt.Fprint(terminal.NewAnsiStdout(r.stdio.Out), details); err != nil {
+			return err
+		}
+		r.AppendRenderedText(details)
+	}
+
 	// add the printed text to the rendered text buffer so we can cleanup later
 	r.AppendRenderedText(layoutOut)
 
@@ -101,11 +108,11 @@ func (r *Renderer) Render(tmpl string, data interface{}) error {
 	return nil
 }
 
-func (r *Renderer) RenderWithCursorOffset(tmpl string, data IterableOpts, opts []core.OptionAnswer, idx int) error {
+func (r *Renderer) RenderWithCursorOffset(tmpl string, data IterableOpts, opts []core.OptionAnswer, idx int, details string) error {
 	cursor := r.NewCursor()
 	cursor.Restore() // clear any accessibility offsetting
 
-	if err := r.Render(tmpl, data); err != nil {
+	if err := r.Render(tmpl, data, details); err != nil {
 		return err
 	}
 	cursor.Save()

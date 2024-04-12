@@ -74,14 +74,11 @@ func (c *Confirm) getBool(showHelp bool, config *PromptConfig) (bool, error) {
 		case val == "":
 			answer = c.Default
 		case val == config.HelpInput && c.Help != "":
-			err := c.Render(
-				ConfirmQuestionTemplate,
-				ConfirmTemplateData{
-					Confirm:  *c,
-					ShowHelp: true,
-					Config:   config,
-				},
-			)
+			err := c.Render(ConfirmQuestionTemplate, ConfirmTemplateData{
+				Confirm:  *c,
+				ShowHelp: true,
+				Config:   config,
+			}, "")
 			if err != nil {
 				// use the default value and bubble up
 				return c.Default, err
@@ -94,14 +91,11 @@ func (c *Confirm) getBool(showHelp bool, config *PromptConfig) (bool, error) {
 			if err := c.Error(config, fmt.Errorf("%q is not a valid answer, please try again.", val)); err != nil {
 				return c.Default, err
 			}
-			err := c.Render(
-				ConfirmQuestionTemplate,
-				ConfirmTemplateData{
-					Confirm:  *c,
-					ShowHelp: showHelp,
-					Config:   config,
-				},
-			)
+			err := c.Render(ConfirmQuestionTemplate, ConfirmTemplateData{
+				Confirm:  *c,
+				ShowHelp: showHelp,
+				Config:   config,
+			}, "")
 			if err != nil {
 				// use the default value and bubble up
 				return c.Default, err
@@ -122,13 +116,10 @@ by a carriage return.
 */
 func (c *Confirm) Prompt(config *PromptConfig) (interface{}, error) {
 	// render the question template
-	err := c.Render(
-		ConfirmQuestionTemplate,
-		ConfirmTemplateData{
-			Confirm: *c,
-			Config:  config,
-		},
-	)
+	err := c.Render(ConfirmQuestionTemplate, ConfirmTemplateData{
+		Confirm: *c,
+		Config:  config,
+	}, "")
 	if err != nil {
 		return "", err
 	}
@@ -143,12 +134,9 @@ func (c *Confirm) Cleanup(config *PromptConfig, val interface{}) error {
 	ans := yesNo(val.(bool))
 
 	// render the template
-	return c.Render(
-		ConfirmQuestionTemplate,
-		ConfirmTemplateData{
-			Confirm: *c,
-			Answer:  ans,
-			Config:  config,
-		},
-	)
+	return c.Render(ConfirmQuestionTemplate, ConfirmTemplateData{
+		Confirm: *c,
+		Answer:  ans,
+		Config:  config,
+	}, "")
 }

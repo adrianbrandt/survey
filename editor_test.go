@@ -87,10 +87,7 @@ func TestEditorRender(t *testing.T) {
 			// set the icon set
 			test.data.Config = defaultPromptConfig()
 
-			err = test.prompt.Render(
-				EditorQuestionTemplate,
-				test.data,
-			)
+			err = test.prompt.Render(EditorQuestionTemplate, test.data, "")
 			assert.NoError(t, err)
 
 			assert.NoError(t, w.Close())

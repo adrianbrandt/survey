@@ -114,17 +114,14 @@ func (i *Input) onRune(config *PromptConfig) terminal.OnRuneFn {
 
 		pageSize := config.PageSize
 		opts, idx := paginate(pageSize, i.options, i.selectedIndex)
-		err := i.Render(
-			InputQuestionTemplate,
-			InputTemplateData{
-				Input:         *i,
-				Answer:        i.answer,
-				ShowHelp:      i.showingHelp,
-				SelectedIndex: idx,
-				PageEntries:   opts,
-				Config:        config,
-			},
-		)
+		err := i.Render(InputQuestionTemplate, InputTemplateData{
+			Input:         *i,
+			Answer:        i.answer,
+			ShowHelp:      i.showingHelp,
+			SelectedIndex: idx,
+			PageEntries:   opts,
+			Config:        config,
+		}, "")
 
 		if err == nil {
 			err = errReadLineAgain
@@ -138,14 +135,11 @@ var errReadLineAgain = errors.New("read line again")
 
 func (i *Input) Prompt(config *PromptConfig) (interface{}, error) {
 	// render the template
-	err := i.Render(
-		InputQuestionTemplate,
-		InputTemplateData{
-			Input:    *i,
-			Config:   config,
-			ShowHelp: i.showingHelp,
-		},
-	)
+	err := i.Render(InputQuestionTemplate, InputTemplateData{
+		Input:    *i,
+		Config:   config,
+		ShowHelp: i.showingHelp,
+	}, "")
 	if err != nil {
 		return "", err
 	}
@@ -207,13 +201,10 @@ func (i *Input) Prompt(config *PromptConfig) (interface{}, error) {
 }
 
 func (i *Input) Cleanup(config *PromptConfig, val interface{}) error {
-	return i.Render(
-		InputQuestionTemplate,
-		InputTemplateData{
-			Input:      *i,
-			ShowAnswer: true,
-			Config:     config,
-			Answer:     val.(string),
-		},
-	)
+	return i.Render(InputQuestionTemplate, InputTemplateData{
+		Input:      *i,
+		ShowAnswer: true,
+		Config:     config,
+		Answer:     val.(string),
+	}, "")
 }

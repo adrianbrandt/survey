@@ -11,13 +11,10 @@ func TestValidationError(t *testing.T) {
 
 	err := fmt.Errorf("Football is not a valid month")
 
-	actual, _, err := core.RunTemplate(
-		ErrorTemplate,
-		&ErrorTemplateData{
-			Error: err,
-			Icon:  defaultIcons().Error,
-		},
-	)
+	actual, _, err := core.RunTemplate(ErrorTemplate, &ErrorTemplateData{
+		Error: err,
+		Icon:  defaultIcons().Error,
+	})
 	if err != nil {
 		t.Errorf("Failed to run template to format error: %s", err)
 	}

@@ -3,6 +3,7 @@ package survey
 import (
 	"errors"
 	"fmt"
+	"text/template"
 
 	"github.com/adrianbrandt/survey/v2/core"
 	"github.com/adrianbrandt/survey/v2/terminal"
@@ -21,19 +22,20 @@ for them to select using the arrow keys and enter. Response type is a slice of s
 */
 type MultiSelect struct {
 	Renderer
-	Message       string
-	Options       []string
-	Default       interface{}
-	Help          string
-	PageSize      int
-	VimMode       bool
-	FilterMessage string
-	Filter        func(filter string, value string, index int) bool
-	Description   func(value string, index int) string
-	filter        string
-	selectedIndex int
-	checked       map[int]bool
-	showingHelp   bool
+	Message              string
+	Options              []string
+	Default              interface{}
+	Help                 string
+	PageSize             int
+	VimMode              bool
+	FilterMessage        string
+	Filter               func(filter string, value string, index int) bool
+	Description          func(value string, index int) string
+	filter               string
+	selectedIndex        int
+	checked              map[int]bool
+	showingHelp          bool
+	multiSelectTemplates *MultiSelectTemplates
 }
 
 // data available to the templates when processing
@@ -51,6 +53,49 @@ type MultiSelectTemplateData struct {
 	// These fields are used when rendering an individual option
 	CurrentOpt   core.OptionAnswer
 	CurrentIndex int
+}
+
+type MultiSelectTemplates struct {
+	// Label is a text/template for the main command line label. Defaults to printing the label as it with
+	// the IconInitial.
+	Label string
+
+	// Active is a text/template for when an item is currently active within the list.
+	Active string
+
+	// Inactive is a text/template for when an item is not currently active inside the list. This
+	// template is used for all items unless they are active or selected.
+	Inactive string
+
+	// Selected is a text/template for when an item was successfully selected.
+	Selected string
+
+	// Details is a text/template for when an item current active to show
+	// additional information. It can have multiple lines.
+	//
+	// Detail will always be displayed for the active element and thus can be used to display additional
+	// information on the element beyond its label.
+	//
+	// promptui will not trim spaces and tabs will be displayed if the template is indented.
+	Details string
+
+	// Help is a text/template for displaying instructions at the top. By default
+	// it shows keys for movement and search.
+	Help string
+
+	// FuncMap is a map of helper functions that can be used inside of templates according to the text/template
+	// documentation.
+	//
+	// By default, FuncMap contains the color functions used to color the text in templates. If FuncMap
+	// is overridden, the colors functions must be added in the override from promptui.FuncMap to work.
+	FuncMap template.FuncMap
+
+	label    *template.Template
+	active   *template.Template
+	inactive *template.Template
+	selected *template.Template
+	details  *template.Template
+	help     *template.Template
 }
 
 // IterateOption sets CurrentOpt and CurrentIndex appropriately so a multiselect option can be rendered individually
@@ -194,7 +239,7 @@ func (m *MultiSelect) OnChange(key rune, config *PromptConfig) {
 	}
 
 	// render the options
-	_ = m.RenderWithCursorOffset(MultiSelectQuestionTemplate, tmplData, opts, idx)
+	_ = m.RenderWithCursorOffset(MultiSelectQuestionTemplate, tmplData, opts, idx, "")
 }
 
 func (m *MultiSelect) filterOptions(config *PromptConfig) []core.OptionAnswer {
@@ -289,7 +334,7 @@ func (m *MultiSelect) Prompt(config *PromptConfig) (interface{}, error) {
 	}
 
 	// ask the question
-	err := m.RenderWithCursorOffset(MultiSelectQuestionTemplate, tmplData, opts, idx)
+	err := m.RenderWithCursorOffset(MultiSelectQuestionTemplate, tmplData, opts, idx, "")
 	if err != nil {
 		return "", err
 	}
@@ -345,16 +390,13 @@ func (m *MultiSelect) Cleanup(config *PromptConfig, val interface{}) error {
 	}
 
 	// execute the output summary template with the answer
-	return m.Render(
-		MultiSelectQuestionTemplate,
-		MultiSelectTemplateData{
-			MultiSelect:   *m,
-			SelectedIndex: m.selectedIndex,
-			Checked:       m.checked,
-			Answer:        answer,
-			ShowAnswer:    true,
-			Description:   m.Description,
-			Config:        config,
-		},
-	)
+	return m.Render(MultiSelectQuestionTemplate, MultiSelectTemplateData{
+		MultiSelect:   *m,
+		SelectedIndex: m.selectedIndex,
+		Checked:       m.checked,
+		Answer:        answer,
+		ShowAnswer:    true,
+		Description:   m.Description,
+		Config:        config,
+	}, "")
 }

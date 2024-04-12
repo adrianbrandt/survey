@@ -104,6 +104,7 @@ func TestSelectRender(t *testing.T) {
 			err = test.prompt.Render(
 				SelectQuestionTemplate,
 				test.data,
+				"",
 			)
 			assert.NoError(t, err)
 

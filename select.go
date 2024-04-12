@@ -1,8 +1,11 @@
 package survey
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"reflect"
+	"text/template"
 
 	"github.com/adrianbrandt/survey/v2/core"
 	"github.com/adrianbrandt/survey/v2/terminal"
@@ -23,6 +26,7 @@ type Select struct {
 	Renderer
 	Message       string
 	Options       []string
+	Items         interface{}
 	Default       interface{}
 	Help          string
 	PageSize      int
@@ -33,9 +37,9 @@ type Select struct {
 	filter        string
 	selectedIndex int
 	showingHelp   bool
+	Templates     *SelectTemplates
 }
 
-// SelectTemplateData is the data available to the templates when processing
 type SelectTemplateData struct {
 	Select
 	PageEntries   []core.OptionAnswer
@@ -46,9 +50,17 @@ type SelectTemplateData struct {
 	Description   func(value string, index int) string
 	Config        *PromptConfig
 
-	// These fields are used when rendering an individual option
 	CurrentOpt   core.OptionAnswer
 	CurrentIndex int
+}
+
+type SelectTemplates struct {
+	Label   string
+	Details string
+	FuncMap template.FuncMap
+
+	label   *template.Template
+	details *template.Template
 }
 
 // IterateOption sets CurrentOpt and CurrentIndex appropriately so a select option can be rendered individually
@@ -179,9 +191,7 @@ func (s *Select) OnChange(key rune, config *PromptConfig) bool {
 		PageEntries:   opts,
 		Config:        config,
 	}
-
-	// render the options
-	_ = s.RenderWithCursorOffset(SelectQuestionTemplate, tmplData, opts, idx)
+	_ = s.RenderWithCursorOffset(SelectQuestionTemplate, tmplData, opts, idx, s.getDetailTemplate())
 
 	// keep prompting
 	return false
@@ -258,6 +268,11 @@ func (s *Select) Prompt(config *PromptConfig) (interface{}, error) {
 	// figure out the options and index to render
 	opts, idx := paginate(pageSize, core.OptionAnswerList(s.Options), s.selectedIndex)
 
+	err := s.prepareTemplates()
+	if err != nil {
+		return "", err
+	}
+
 	cursor := s.NewCursor()
 	cursor.Save()          // for proper cursor placement during selection
 	cursor.Hide()          // hide the cursor
@@ -273,12 +288,12 @@ func (s *Select) Prompt(config *PromptConfig) (interface{}, error) {
 		Config:        config,
 	}
 
-	// ask the question
-	err := s.RenderWithCursorOffset(SelectQuestionTemplate, tmplData, opts, idx)
+	// ask the question FIRST RENDER
+	details := s.getDetailTemplate()
+	err = s.RenderWithCursorOffset(SelectQuestionTemplate, tmplData, opts, idx, details)
 	if err != nil {
 		return "", err
 	}
-
 	rr := s.NewRuneReader()
 	_ = rr.SetTermMode()
 	defer func() {
@@ -316,14 +331,84 @@ func (s *Select) Prompt(config *PromptConfig) (interface{}, error) {
 func (s *Select) Cleanup(config *PromptConfig, val interface{}) error {
 	cursor := s.NewCursor()
 	cursor.Restore()
-	return s.Render(
-		SelectQuestionTemplate,
-		SelectTemplateData{
-			Select:      *s,
-			Answer:      val.(core.OptionAnswer).Value,
-			ShowAnswer:  true,
-			Description: s.Description,
-			Config:      config,
-		},
-	)
+	return s.Render(SelectQuestionTemplate, SelectTemplateData{
+		Select:      *s,
+		Answer:      val.(core.OptionAnswer).Value,
+		ShowAnswer:  true,
+		Description: s.Description,
+		Config:      config,
+	}, "")
+}
+
+func (s *Select) prepareTemplates() error {
+	tpls := s.Templates
+	if tpls == nil {
+		tpls = &SelectTemplates{}
+	}
+
+	if tpls.FuncMap == nil {
+		tpls.FuncMap = FuncMap
+	}
+
+	if tpls.Label == "" {
+		tpls.Label = fmt.Sprintf("%s {{.}}: ", IconInitial)
+	}
+
+	tpl, err := template.New("").Funcs(tpls.FuncMap).Parse(tpls.Label)
+	if err != nil {
+		return err
+	}
+
+	tpls.label = tpl
+
+	if tpls.Details != "" {
+		tpl, err = template.New("").Funcs(tpls.FuncMap).Parse(tpls.Details)
+		if err != nil {
+			return err
+		}
+
+		tpls.details = tpl
+	}
+
+	s.Templates = tpls
+
+	return nil
+}
+
+func ApplyTemplate(tmplStr string, data interface{}) (string, error) {
+	// Parse the template string
+	tmpl, err := template.New("template").Parse(tmplStr)
+	if err != nil {
+		return "", err
+	}
+
+	// Apply the template to the data
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func getItemFromInterface(data interface{}, index int) interface{} {
+	// Use type assertion to convert the interface back into a slice of Meal
+	switch reflect.TypeOf(data).Kind() {
+	case reflect.Slice:
+		s := reflect.ValueOf(data)
+		return s.Index(index)
+	}
+	return nil
+}
+
+func (s *Select) getDetailTemplate() string {
+	if s.Items != nil && s.Templates.details != nil {
+
+		item := getItemFromInterface(s.Items, s.selectedIndex)
+		output := *bytes.NewBufferString("")
+		_ = s.Templates.details.Execute(&output, item)
+
+		return output.String()
+	}
+	return ""
 }
